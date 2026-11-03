@@ -1,0 +1,55 @@
+name: Deploy DNB Study Hub ZIP
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'DNB_Study_Hub_GitHub_Ready.zip'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Extract application ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          unzip -q -o DNB_Study_Hub_GitHub_Ready.zip -d _site
+          test -f _site/index.html || {
+            echo "ERROR: ZIP must contain index.html at its root."
+            exit 1
+          }
+          echo "Extracted website files:"
+          ls -lah _site | head -30
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
